@@ -1,46 +1,277 @@
 <!DOCTYPE html>
 <html lang="en">
+
 <head>
     <meta charset="UTF-8">
     <meta http-equiv="X-UA-Compatible" content="IE=edge">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Document</title>
     <script defer src="https://unpkg.com/alpinejs@3.x.x/dist/cdn.min.js"></script>
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bulma@0.9.3/css/bulma.min.css">
+    <link rel="stylesheet" href="//use.fontawesome.com/releases/v5.0.7/css/all.css">
+    <style>
+        input::-webkit-outer-spin-button,
+        input::-webkit-inner-spin-button {
+            -webkit-appearance: none;
+            margin: 0;
+        }
+        input[type=number] {
+            -moz-appearance: textfield;
+        }
+    </style>
 </head>
-<body>
-    <h1>Expense Tracker</h1>
-    <p>Add A New Item:</p>
-    <div>
-        <label for="name">Name:</label>
-        <input class="input" type="text" placeholder="Where was the expense made?" id="name">
+
+<body class="container is-max-desktop">
+    <div x-data="component()">
+        <h1 class="title is-size-2-desktop mt-5 has-text-centered">Expense Tracker</h1>
+        <p class="subtitle is-size-3-desktop has-text-centered mt-5 mb-0">Add A New Item:</p>
         <div>
-            <label for="date">Date:</label>
-            <input class="input" type="text" placeholder="mm/dd/yyyy" id="date">
-            <label for="amount">Amount:</label>
-            <input class="input" type="number" placeholder="$100" id="amount">
+            <label for="name">Name:</label>
+            <input class="input is-normal is-primary" x-model="name" type="text"
+                placeholder="Where was the expense made?" id="name">
+            <div class="is-flex is-justify-content-space-between">
+                <div class="is-flex is-flex-direction-row mt-5">
+                    <div class="mr-5">
+                        <label for="date">Date:</label>
+                        <input style="cursor:pointer" class="input is-normal is-primary" x-model="date" type="date"
+                            value="2021-01-01" min="2021-01-01" max="2021-12-31">
+                    </div>
+                    <div class="ml-5">
+                        <label for="amount">Amount:</label>
+                        <input class="input is-normal is-primary has-text-right" x-model.number="amount"
+                            placeholder="$100.00" type="number" @keyup.enter="addExpense()">
+                    </div>
+                </div>
+                <button class="button is-danger mt-6" @click="clearList()">Clear</button>
+            </div>
         </div>
-        
+        <button class="button is-success mt-5 mb-5" @click="addExpense()">Add Expense</button>
+        <nav class="breadcrumb is-small" aria-label="breadcrumbs">
+            <span>Month</span>
+            <ul>
+                <li @click="selectedMonth=1"><a href="#">1</a></li>
+                <li @click="selectedMonth=2"><a href="#">2</a></li>
+                <li @click="selectedMonth=3"><a href="#">3</a></li>
+                <li @click="selectedMonth=4"><a href="#">4</a></li>
+                <li @click="selectedMonth=5"><a href="#">5</a></li>
+                <li @click="selectedMonth=6"><a href="#">6</a></li>
+                <li @click="selectedMonth=7"><a href="#">7</a></li>
+                <li @click="selectedMonth=8"><a href="#">8</a></li>
+                <li @click="selectedMonth=9"><a href="#">9</a></li>
+                <li @click="selectedMonth=10"><a href="#">10</a></li>
+                <li @click="selectedMonth=11"><a href="#">11</a></li>
+                <li @click="selectedMonth=12"><a href="#">12</a></li>
+                <li @click="selectedMonth=null"><a href="#">All</a></li>
+            </ul>
+        </nav>
+        <div class="select is-link mb-0">
+            <select x-model="selectedCategory">
+                <option value="" disabled selected hidden>Filter categories</option>
+                <option value="">All categories</option>
+                <option value="1">Home</option>
+                <option value="2">Groceries</option>
+                <option value="3">Clothing</option>
+                <option value="4">Fuel</option>
+                <option value="5">Drinks</option>
+                <option value="6">Kids</option>
+                <option value="7">Shopping</option>
+                <option value="8">Others</option>
+            </select>
+        </div>
+        <table class="table is-bordered is-striped is-narrow is-hoverable is-fullwidth mt-3">
+            <thead>
+                <tr>
+                    <th style="width: 1.5rem"></th>
+                    <th style="width: 12rem">Categories</th>
+                    <th style="width: 25rem">Name</th>
+                    <th style="width: 10rem">Date
+                        <span style="cursor:pointer" class="pl-3" @click="sortDate()">
+                            <template x-if="sortDirectionDate=='desc'">
+                                <i class="fas fa-sort-up"></i>
+                            </template>
+                            <template x-if="sortDirectionDate=='asc'">
+                                <i  class="fas fa-sort-down"></i>
+                            </template>
+                        </span>
+                    </th>
+                    <th style="width: 10rem">Amount
+                        <span style="cursor:pointer" class="pl-3" @click="sortAmount()">
+                            <template x-if="sortDirectionAmount=='desc'">
+                                <i class="fas fa-sort-up"></i>
+                            </template>
+                            <template x-if="sortDirectionAmount=='asc'">
+                                <i  class="fas fa-sort-down"></i>
+                            </template>
+                        </span>
+                    </th>
+                </tr>
+            </thead>
+            <tbody>
+                <template x-for="expense in categorizedList" :key="expense.id">
+                    <tr>
+                        <td>
+                            <span style="cursor:pointer" @click="deleteLine(expense.id)"><i class="fas fa-trash-alt"></i></span>
+                        </td>
+                        <td>
+                            <select x-model="expense.category" style="border-style:none; width: 100%; cursor:pointer">
+                                <option value="" disabled selected hidden>Choose a category</option>
+                                <option value="1">Home</option>
+                                <option value="2">Groceries</option>
+                                <option value="3">Clothing</option>
+                                <option value="4">Fuel</option>
+                                <option value="5">Drinks</option>
+                                <option value="6">Kids</option>
+                                <option value="7">Shopping</option>
+                                <option value="8">Others</option>
+                            </select>
+                        </td>
+                        <td x-text="expense.name"></td>
+                        <td x-text="expense.date"></td>
+                        <td x-text="toCurrency(expense.amount)" class="has-text-right"></td>
+                    </tr>
+                </template>
+            </tbody>
+            <tfoot>
+                <tr>
+                    <td class="is-size-6 has-text-weight-bold has-text-right" colspan="4">Total spending:</td>
+                    <td class="is-size-6 has-text-weight-bold has-text-right" x-text="toCurrency(totalCost)"></td>
+                </tr>
+            </tfoot>
+        </table>
     </div>
-    
-    <button>Add Expense</button>
-<table>
-    <thead>
-        <tr>
-            <th>Categories</th>
-            <th>Name</th>
-            <th>Date</th>
-            <th>Amount</th>
-        </tr>
-    </thead>
-    <tbody>
-        <tr>
-            <td>
-
-            </td>
-
-        </tr>
-    </tbody>
-</table>
-    
 </body>
+
 </html>
+<script>
+    function component() {
+        return {
+            name: '',
+            date: '',
+            amount: null,
+            expensesArray: [
+                {
+                    id: 1,
+                    name: 'aaa',
+                    date: '2021/3/29',
+                    amount: 1000
+                },
+                {
+                    id: 2,
+                    name: 'bbb',
+                    date: '2021/4/2',
+                    amount: 20
+                },
+                {
+                    id: 3,
+                    name: 'ccc',
+                    date: '2021/12/16',
+                    amount: 478
+                },
+                {
+                    id: 4,
+                    name: 'ggg',
+                    date: '2021/8/5',
+                    amount: 304
+                },
+                {
+                    id: 5,
+                    name: 'kkk',
+                    date: '2021/8/5',
+                    amount: 88
+                },
+                {
+                    id: 6,
+                    name: 'ooo',
+                    date: '2021/8/5',
+                    amount: 432
+                },
+            ],
+            count: 0,
+            selectedCategory: '',
+            sortDirectionDate: 'asc',
+            sortDirectionAmount: 'asc',
+            selectedMonth: null,
+            // This returns string 
+            toCurrency(amount) {
+                const format = new Intl.NumberFormat('en-US', {
+                    style: 'currency',
+                    currency: 'USD',
+                    minimumFractionDigits: 2
+                });
+                return format.format(amount);
+            },
+            addExpense() {
+                if (!this.name || !this.date || !this.amount) {
+                    alert("Please input some infomation correctly!");
+                    return;
+                }
+                this.count++;
+                // create a new object every time clicking the Add Expense button 
+                const expenseOb = {};
+                expenseOb.id = this.count;
+                expenseOb.name = this.name;
+                expenseOb.date = this.date;
+                expenseOb.amount = this.amount;
+                this.expensesArray.push(expenseOb);
+                this.name = null;
+                this.date = null;
+                this.amount = null;
+            },
+            clearList() {
+                this.name = null;
+                this.date = null;
+                this.amount = null;
+            },
+            deleteLine(id) {
+                const remainArray = this.expensesArray.filter(e => e.id != id);
+                this.expensesArray = remainArray;
+            },
+            // use javascript getter
+            get categorizedList() {
+                let categorizedList = this.expensesArray;
+                if (this.selectedCategory) {
+                    categorizedList = categorizedList.filter(e => e.category == this.selectedCategory);
+                }
+                if (this.selectedMonth) {
+                    categorizedList = categorizedList.filter(e => new Date(e.date).getMonth() == this.selectedMonth - 1);
+                }
+                return categorizedList;
+            },
+            get totalCost() {
+                return this.categorizedList.reduce((acc, curr) => acc + curr.amount, 0);
+            },
+            sortDate() {
+                if (this.sortDirectionDate == 'asc') {
+                    this.expensesArray.sort((a, b) => {
+                        let da = new Date(a.date);
+                        console.log(da);
+                        let db = new Date(b.date);
+                        this.sortDirectionDate = 'desc';
+                        return da - db;
+                    });
+                } else {
+                    this.expensesArray.sort((a, b) => {
+                        let da = new Date(a.date);
+                        let db = new Date(b.date);
+                        this.sortDirectionDate = 'asc';
+                        return db - da;
+                    });
+                }
+            },
+            sortAmount() {
+                if (this.sortDirectionAmount == 'asc') {
+                    this.expensesArray.sort((a, b) => {
+                        this.sortDirectionAmount = 'desc';
+                        return b.amount - a.amount;
+                    });
+                } else {
+                    this.expensesArray.sort((a, b) => {
+                        this.sortDirectionAmount = 'asc';
+                        return a.amount - b.amount;
+                    });
+                }
+            }
+        }
+    }
+</script>
